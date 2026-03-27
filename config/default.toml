@@ -1,0 +1,17 @@
+[server]
+bind_address = "0.0.0.0:8080"
+
+[postgres]
+url = "postgres://postgres:postgres@localhost:5432/tap_trading"
+max_connections = 20
+
+[redis]
+url = "redis://127.0.0.1:6379"
+balance_cache_format = "plain_json_string"
+balance_cache_sync_mode = "write_through"
+
+[clickhouse]
+url = "http://localhost:8123"
+database = "tap_trading"
+username = "default"
+password = ""

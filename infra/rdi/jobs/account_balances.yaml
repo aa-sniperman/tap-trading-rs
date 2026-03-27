@@ -1,0 +1,19 @@
+# RDI job for the ledger balance snapshot cache.
+# References:
+# - Job files: https://redis.io/docs/latest/integrate/redis-data-integration/data-pipelines/transform-examples/
+# - Redis JSON output: https://redis.io/docs/latest/integrate/redis-data-integration/data-pipelines/transform-examples/redis-json-example/
+
+name: account_balances to Redis JSON
+source:
+  db: tap_trading
+  schema: public
+  table: account_balances
+output:
+  - uses: redis.write
+    with:
+      connection: target
+      data_type: json
+      on_update: replace
+      key:
+        language: jmespath
+        expression: concat(['ledger:balance:', user_id, ':', asset])
