@@ -74,7 +74,6 @@ impl AppServices {
         let balance_cache = crate::infra::redis::balance_cache::BalanceCache::new(
             redis.clone(),
             settings.redis.balance_cache_format.clone(),
-            settings.redis.balance_cache_sync_mode.clone(),
         );
         let ledger_repo = crate::infra::postgres::ledger::LedgerRepository::new(postgres.clone(), balance_cache);
         let order_repo = crate::infra::postgres::order::OrderRepository::new(postgres.clone());

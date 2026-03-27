@@ -7,8 +7,7 @@ max_connections = 20
 
 [redis]
 url = "redis://127.0.0.1:6379"
-balance_cache_format = "plain_json_string"
-balance_cache_sync_mode = "write_through"
+balance_cache_format = "redis_json"
 
 [clickhouse]
 url = "http://localhost:8123"

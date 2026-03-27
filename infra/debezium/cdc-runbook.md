@@ -1,12 +1,12 @@
-# Debezium CDC Runbook
+# RDI CDC Runbook
 
 ## 1. Configure PostgreSQL
 
 Apply PostgreSQL logical replication settings:
 
 - `wal_level = logical`
-- `max_replication_slots >= number_of_connectors`
-- `max_wal_senders >= number_of_connectors`
+- `max_replication_slots >= number_of_rdi_collectors`
+- `max_wal_senders >= number_of_rdi_collectors`
 
 Then run:
 
@@ -15,38 +15,33 @@ Then run:
 \i infra/postgres/01-publication.sql
 ```
 
-## 2. Deploy Debezium Connector
+## 2. Configure RDI Collector And Pipeline
 
-Register the connector using:
+Use the prepared files:
 
-- [account-balances-connector.json](./account-balances-connector.json)
+- `infra/rdi/config.yaml.example`
+- `infra/rdi/jobs/account_balances.yaml`
 
-Example with Kafka Connect:
+RDI uses Debezium internally to read PostgreSQL logical replication and push the change stream through the RDI pipeline into Redis.
 
-```bash
-curl -X POST http://localhost:8083/connectors \
-  -H 'Content-Type: application/json' \
-  --data @infra/debezium/account-balances-connector.json
-```
+Key source settings are:
 
-## 3. Sync Kafka -> Redis
+- `publication.name = tap_trading_cdc`
+- `slot.name = tap_trading_cdc_slot`
+- `plugin.name = pgoutput`
 
-Choose one path:
+Key Redis mapping is:
 
-1. Redis Data Integration (RDI)
-2. Custom consumer
+- key: `ledger:balance:{user_id}:{asset}`
+- value: RedisJSON snapshot of `account_balances`
 
-For a custom consumer, map topic `tap_trading.cdc.account_balances` using the rules in:
-
-- [redis-sync-spec.md](./redis-sync-spec.md)
-
-## 4. Verify
+## 3. Verify
 
 Check:
 
 1. Replication slot exists
 2. Publication contains `account_balances`
-3. Kafka topic receives events
+3. RDI pipeline is healthy
 4. Redis key `ledger:balance:{user_id}:{asset}` updates after DB writes
 
 Useful PostgreSQL checks:
@@ -56,6 +51,9 @@ SELECT * FROM pg_publication WHERE pubname = 'tap_trading_cdc';
 SELECT * FROM pg_replication_slots WHERE slot_name = 'tap_trading_cdc_slot';
 ```
 
-## 5. Important App Change
+## 4. Flow Summary
 
-If CDC becomes the official Redis sync path, remove or disable the app-side write-through balance cache refresh to avoid dual writers.
+1. PostgreSQL writes row changes into WAL.
+2. RDI/Debezium reads WAL using logical replication.
+3. The change event flows through the RDI pipeline.
+4. RDI transforms the row and writes the balance snapshot into Redis.

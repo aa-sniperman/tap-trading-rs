@@ -38,6 +38,12 @@ Rust backend scaffold for Tap Trading phase 1.
 docker compose up -d
 ```
 
+For a local Redis Software target suitable for RDI development/testing:
+
+```bash
+docker compose --profile redis-software up -d redis-software
+```
+
 ## Config
 
 Defaults live in `config/default.toml`.
@@ -53,26 +59,28 @@ APP__CLICKHOUSE__URL=http://localhost:8123
 
 ## CDC Setup
 
-Prepared infra artifacts for PostgreSQL logical replication and Debezium live in `infra/`:
+Prepared infra artifacts for PostgreSQL logical replication and RDI live in `infra/`:
 
 - `infra/postgres/postgresql-cdc.conf.example`
 - `infra/postgres/00-replication-setup.sql`
 - `infra/postgres/01-publication.sql`
-- `infra/debezium/account-balances-connector.json`
-- `infra/debezium/redis-sync-spec.md`
 - `infra/debezium/cdc-runbook.md`
-
 - `infra/rdi/config.yaml.example`
 - `infra/rdi/jobs/account_balances.yaml`
 - `infra/rdi/rdi-runbook.md`
 
-If Debezium/RDI becomes the official Redis sync path, disable the app-side write-through balance cache to avoid two Redis writers.
+Flow:
 
-For RDI-backed balance cache, set:
+1. PostgreSQL writes balance changes into WAL.
+2. RDI/Debezium reads WAL via logical replication.
+3. The change flows through the RDI pipeline.
+4. RDI transforms the row and writes RedisJSON balance snapshots.
+
+For RDI-backed balance cache, run the app with:
 
 ```bash
+APP__REDIS__URL=redis://127.0.0.1:12000
 APP__REDIS__BALANCE_CACHE_FORMAT=redis_json
-APP__REDIS__BALANCE_CACHE_SYNC_MODE=read_only
 ```
 
 ## Run app

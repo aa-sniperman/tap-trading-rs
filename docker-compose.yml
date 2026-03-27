@@ -12,9 +12,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     ports:
       - "6379:6379"
+      - "8001:8001"
+
+  redis-software:
+    image: redislabs/redis
+    profiles: ["redis-software"]
+    cap_add:
+      - sys_resource
+    ports:
+      - "8443:8443"
+      - "9443:9443"
+      - "12000:12000"
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.8

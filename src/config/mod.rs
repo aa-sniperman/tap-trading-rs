@@ -34,7 +34,6 @@ pub struct PostgresSettings {
 pub struct RedisSettings {
     pub url: String,
     pub balance_cache_format: RedisBalanceCacheFormat,
-    pub balance_cache_sync_mode: RedisBalanceCacheSyncMode,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -42,13 +41,6 @@ pub struct RedisSettings {
 pub enum RedisBalanceCacheFormat {
     PlainJsonString,
     RedisJson,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RedisBalanceCacheSyncMode {
-    WriteThrough,
-    ReadOnly,
 }
 
 #[derive(Debug, Clone, Deserialize)]
