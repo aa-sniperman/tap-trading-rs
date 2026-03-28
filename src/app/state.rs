@@ -90,6 +90,7 @@ impl AppServices {
             order_cache,
             crate::domain::order::NoopOrderFanout,
             ledger.clone(),
+            settings.order.side_effect_max_concurrency,
         );
         let payment = PaymentService::new(payment_repo, ledger.clone());
 

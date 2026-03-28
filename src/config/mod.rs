@@ -7,6 +7,7 @@ pub struct Settings {
     pub postgres: PostgresSettings,
     pub redis: RedisSettings,
     pub clickhouse: ClickHouseSettings,
+    pub order: OrderSettings,
 }
 
 impl Settings {
@@ -49,4 +50,9 @@ pub struct ClickHouseSettings {
     pub database: String,
     pub username: String,
     pub password: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct OrderSettings {
+    pub side_effect_max_concurrency: usize,
 }

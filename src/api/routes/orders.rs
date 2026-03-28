@@ -75,6 +75,17 @@ pub async fn settlement_preview(
         Ok(Some(order)) => match order.status {
             crate::domain::order::OrderCacheStatus::Accepted => "accepted",
             crate::domain::order::OrderCacheStatus::Confirmed => "confirmed",
+            crate::domain::order::OrderCacheStatus::SettledWinPendingEffect => {
+                "settled_win_pending_effect"
+            }
+            crate::domain::order::OrderCacheStatus::SettledLosePendingEffect => {
+                "settled_lose_pending_effect"
+            }
+            crate::domain::order::OrderCacheStatus::SettledWin => "settled_win",
+            crate::domain::order::OrderCacheStatus::SettledLose => "settled_lose",
+            crate::domain::order::OrderCacheStatus::SettlementReverted => {
+                "settlement_reverted"
+            }
         },
         Ok(None) => "not_found",
         Err(_) => "error",

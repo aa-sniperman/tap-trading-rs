@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::domain::{
     common::OrderId,
-    order::{CachedOrder, OrderCacheRepository, OrderError},
+    order::{CachedOrder, OrderCacheRepository, OrderCacheStatus, OrderError},
 };
 
 #[derive(Clone)]
@@ -39,15 +39,26 @@ impl OrderCacheRepository for OrderCache {
             .await
             .map_err(|error| OrderError::Cache(error.to_string()))?;
 
-        connection
-            .zadd(
-                Self::active_index_key(),
-                order.order_id.to_string(),
-                order.bet_time.timestamp_millis(),
-            )
-            .await
-            .map(|_: usize| ())
-            .map_err(|error| OrderError::Cache(error.to_string()))
+        match order.status {
+            OrderCacheStatus::Accepted | OrderCacheStatus::Confirmed => connection
+                .zadd(
+                    Self::active_index_key(),
+                    order.order_id.to_string(),
+                    order.bet_time.timestamp_millis(),
+                )
+                .await
+                .map(|_: usize| ())
+                .map_err(|error| OrderError::Cache(error.to_string())),
+            OrderCacheStatus::SettledWinPendingEffect
+            | OrderCacheStatus::SettledLosePendingEffect
+            | OrderCacheStatus::SettledWin
+            | OrderCacheStatus::SettledLose
+            | OrderCacheStatus::SettlementReverted => connection
+                .zrem::<_, _, i32>(Self::active_index_key(), order.order_id.to_string())
+                .await
+                .map(|_| ())
+                .map_err(|error| OrderError::Cache(error.to_string())),
+        }
     }
 
     async fn delete_order(&self, order_id: OrderId) -> Result<(), OrderError> {

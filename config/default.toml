@@ -14,3 +14,6 @@ url = "http://localhost:8123"
 database = "tap_trading"
 username = "default"
 password = ""
+
+[order]
+side_effect_max_concurrency = 256
