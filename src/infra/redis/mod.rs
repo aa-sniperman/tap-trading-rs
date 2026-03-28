@@ -1,4 +1,5 @@
 pub mod balance_cache;
+pub mod order_cache;
 pub mod price_stream;
 
 use redis::aio::ConnectionManager;

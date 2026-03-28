@@ -1,3 +1,4 @@
+pub mod order;
 pub mod price_history;
 
 use crate::config::ClickHouseSettings;

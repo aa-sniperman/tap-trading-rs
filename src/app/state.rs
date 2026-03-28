@@ -76,7 +76,8 @@ impl AppServices {
             settings.redis.balance_cache_format.clone(),
         );
         let ledger_repo = crate::infra::postgres::ledger::LedgerRepository::new(postgres.clone(), balance_cache);
-        let order_repo = crate::infra::postgres::order::OrderRepository::new(postgres.clone());
+        let order_events = crate::infra::clickhouse::order::OrderEventRepositoryImpl::new(clickhouse.clone());
+        let order_cache = crate::infra::redis::order_cache::OrderCache::new(redis.clone());
         let payment_repo = crate::infra::postgres::payment::PaymentRepository::new(postgres.clone());
         let price_cache = crate::infra::redis::price_stream::PriceCache::new(redis.clone());
         let price_history = crate::infra::clickhouse::price_history::PriceHistoryRepository::new(clickhouse.clone());
@@ -84,7 +85,12 @@ impl AppServices {
         let ledger = LedgerService::new(ledger_repo);
         let price_stream = PriceStreamService::new(price_cache, price_history);
         let grid = GridService::new();
-        let order = OrderService::new(order_repo, ledger.clone(), price_stream.clone(), grid.clone());
+        let order = OrderService::new(
+            order_events,
+            order_cache,
+            crate::domain::order::NoopOrderFanout,
+            ledger.clone(),
+        );
         let payment = PaymentService::new(payment_repo, ledger.clone());
 
         Self {

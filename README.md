@@ -16,9 +16,9 @@ Rust backend scaffold for Tap Trading phase 1.
 - `src/app`: bootstrap, shared state, telemetry.
 - `src/config`: typed config loading.
 - `src/domain`: business modules.
-- `src/infra/postgres`: ledger, order, payment repositories.
+- `src/infra/postgres`: ledger and payment repositories.
 - `src/infra/redis`: price cache adapter.
-- `src/infra/clickhouse`: price history adapter.
+- `src/infra/clickhouse`: price history and order adapters.
 - `migrations`: Postgres schema plus ClickHouse DDL.
 
 ## Core modules
@@ -29,7 +29,9 @@ Rust backend scaffold for Tap Trading phase 1.
   One account is queried by `(user_id, asset)`. Each account keeps an `account_version` starting at `0` and increments by `1` for every appended entry on that account. Entries are immutable.
 - `price_stream`: latest price cache plus immutable tick history.
 - `grid`: cell definition and placement rules from the PRD.
-- `order`: placement and settlement boundary for user bets.
+- `order`: minimal bet saga for fast placement experiments.
+  The accepted order intent is intentionally small: `order_id`, `user_id`, `bet_amount_minor`, `bet_asset`, `bet_time`.
+  Order lifecycle is append-only in ClickHouse `order_events` with event types `placed`, `confirmed`, `reverted`, while Redis keeps the active cache view for fast fanout/read-after-write.
 - `payment`: deposit and withdrawal intake, then sync into ledger.
 
 ## Run infra

@@ -1,5 +1,4 @@
 pub mod ledger;
-pub mod order;
 pub mod payment;
 
 use sqlx::{postgres::PgPoolOptions, PgPool};

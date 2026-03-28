@@ -54,7 +54,6 @@ pub struct OrderHoldParams {
     pub user_id: UserId,
     pub amount: Money,
     pub order_id: Uuid,
-    pub grid_cell_id: Uuid,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -282,7 +281,7 @@ impl LedgerService {
     }
 
     fn build_order_hold_key(params: &OrderHoldParams) -> String {
-        format!("order_hold:{}:{}", params.order_id, params.grid_cell_id)
+        format!("order_hold:{}", params.order_id)
     }
 
     fn build_order_settle_win_key(params: &OrderSettleWinParams) -> String {
