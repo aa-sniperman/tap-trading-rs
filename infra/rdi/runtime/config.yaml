@@ -1,0 +1,48 @@
+# Redis Data Integration configuration
+# Reference: https://redis.io/docs/latest/integrate/redis-data-integration/reference/config-yaml-reference/
+
+sources:
+  postgres_cdc:
+    type: cdc
+    connection:
+      type: postgres
+      host: postgres
+      port: 5432
+      user: debezium
+      password: debezium
+      database: tap_trading
+    databases:
+      - tap_trading
+    schemas:
+      - public
+    tables:
+      account_balances: {}
+    advanced:
+      source:
+        publication.name: tap_trading_cdc
+        publication.autocreate.mode: disabled
+        slot.name: tap_trading_cdc_slot
+        plugin.name: pgoutput
+        snapshot.mode: initial
+        decimal.handling.mode: string
+        time.precision.mode: connect
+        include.schema.changes: false
+        tombstones.on.delete: false
+        heartbeat.interval.ms: 10000
+
+processors:
+  type: classic
+  on_failed_retry_interval: 5
+  read_batch_size: 2000
+  read_batch_timeout_ms: 100
+  enable_async_processing: true
+  error_handling: dlq
+  target_data_type: json
+  json_update_strategy: replace
+
+targets:
+  target:
+    connection:
+      type: redis
+      host: redis
+      port: 6379

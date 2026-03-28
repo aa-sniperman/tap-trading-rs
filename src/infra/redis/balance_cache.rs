@@ -44,6 +44,27 @@ impl BalanceCache {
             .map_err(|error| LedgerError::Repository(error.to_string()))
     }
 
+    pub async fn set_balance(&self, balance: &AccountBalance) -> Result<(), LedgerError> {
+        let mut connection = self.connection_manager.clone();
+        let key = Self::key(balance.user_id, &balance.asset);
+        let payload = serde_json::to_string(balance)
+            .map_err(|error| LedgerError::Repository(error.to_string()))?;
+
+        match self.format {
+            RedisBalanceCacheFormat::PlainJsonString => connection
+                .set(key, payload)
+                .await
+                .map_err(|error| LedgerError::Repository(error.to_string())),
+            RedisBalanceCacheFormat::RedisJson => redis::cmd("JSON.SET")
+                .arg(key)
+                .arg("$")
+                .arg(payload)
+                .query_async(&mut connection)
+                .await
+                .map_err(|error| LedgerError::Repository(error.to_string())),
+        }
+    }
+
     fn key(user_id: uuid::Uuid, asset: &str) -> String {
         format!("ledger:balance:{}:{}", user_id, asset)
     }

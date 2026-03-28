@@ -38,6 +38,16 @@ Rust backend scaffold for Tap Trading phase 1.
 docker compose up -d
 ```
 
+The local `postgres` container is started with CDC settings enabled:
+
+- `wal_level=logical`
+- `max_replication_slots=8`
+- `max_wal_senders=8`
+- `max_slot_wal_keep_size=4096`
+- `wal_sender_timeout=60s`
+
+It also runs [00-replication-setup.sql](/Users/sniperman/code/tap-trading-rs/infra/postgres/init/00-replication-setup.sql) on first init to create the `debezium` replication user for local RDI development.
+
 For a local Redis Software target suitable for RDI development/testing:
 
 ```bash
@@ -56,10 +66,25 @@ APP__REDIS__URL=redis://127.0.0.1:6379
 APP__CLICKHOUSE__URL=http://localhost:8123
 ```
 
+## Balance cache
+
+The current app path uses Redis as a write-through balance cache:
+
+1. The ledger transaction commits in PostgreSQL.
+2. The repository reads the latest `account_balances` snapshot.
+3. The snapshot is written into Redis under `ledger:balance:{user_id}:{asset}`.
+4. Later balance reads hit Redis first and fall back to PostgreSQL on cache miss.
+
+Default local config uses:
+
+```bash
+APP__REDIS__URL=redis://127.0.0.1:6379
+APP__REDIS__BALANCE_CACHE_FORMAT=plain_json_string
+```
 
 ## CDC Setup
 
-Prepared infra artifacts for PostgreSQL logical replication and RDI live in `infra/`:
+CDC/RDI artifacts are kept in `infra/` as awareness for a future ops rollout:
 
 - `infra/postgres/postgresql-cdc.conf.example`
 - `infra/postgres/00-replication-setup.sql`
@@ -67,21 +92,24 @@ Prepared infra artifacts for PostgreSQL logical replication and RDI live in `inf
 - `infra/debezium/cdc-runbook.md`
 - `infra/rdi/config.yaml.example`
 - `infra/rdi/jobs/account_balances.yaml`
+- `infra/rdi/runtime/config.yaml`
+- `infra/rdi/runtime/jobs/account_balances.yaml`
 - `infra/rdi/rdi-runbook.md`
 
-Flow:
+If you revisit CDC later, after the application schema and migrations exist, apply the publication:
 
-1. PostgreSQL writes balance changes into WAL.
-2. RDI/Debezium reads WAL via logical replication.
-3. The change flows through the RDI pipeline.
-4. RDI transforms the row and writes RedisJSON balance snapshots.
+```bash
+psql postgres://postgres:postgres@localhost:5432/tap_trading -f infra/postgres/01-publication.sql
+```
 
-For RDI-backed balance cache, run the app with:
+If you revisit an RDI-backed cache later, run the app with:
 
 ```bash
 APP__REDIS__URL=redis://127.0.0.1:12000
 APP__REDIS__BALANCE_CACHE_FORMAT=redis_json
 ```
+
+RDI deployment is not part of this `docker-compose` file. The repo only prepares awareness artifacts and a local pipeline layout under `infra/rdi/runtime/`.
 
 ## Run app
 

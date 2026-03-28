@@ -14,6 +14,4 @@ GRANT CONNECT ON DATABASE tap_trading TO debezium;
 GRANT USAGE ON SCHEMA public TO debezium;
 GRANT SELECT ON TABLE public.account_balances TO debezium;
 GRANT SELECT ON TABLE public.ledger_entries TO debezium;
-GRANT SELECT ON TABLE public.orders TO debezium;
-GRANT SELECT ON TABLE public.payments TO debezium;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO debezium;

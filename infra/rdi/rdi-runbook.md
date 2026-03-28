@@ -6,6 +6,9 @@ This setup assumes PostgreSQL logical replication plus publication/slot have bee
 
 - `infra/rdi/config.yaml.example`
 - `infra/rdi/jobs/account_balances.yaml`
+- `infra/rdi/runtime/config.yaml`
+- `infra/rdi/runtime/jobs/account_balances.yaml`
+- `infra/rdi/package-pipeline.sh`
 - `infra/debezium/cdc-runbook.md`
 
 ## What This RDI Setup Does
@@ -18,8 +21,22 @@ This setup assumes PostgreSQL logical replication plus publication/slot have bee
 
 ## Deployment Steps
 
-1. Copy `infra/rdi/config.yaml.example` to your RDI deployment as `config.yaml`.
-2. Mount or copy `infra/rdi/jobs/account_balances.yaml` into the RDI jobs directory.
+This repo mirrors the RDI pipeline layout locally under:
+
+- `infra/rdi/runtime/config.yaml`
+- `infra/rdi/runtime/jobs/`
+
+Redis documents the runtime pipeline path on the RDI host as:
+
+- `/opt/rdi/config/config.yaml`
+- `/opt/rdi/config/jobs/`
+
+1. Edit the local runtime files in:
+   - `infra/rdi/runtime/config.yaml`
+   - `infra/rdi/runtime/jobs/account_balances.yaml`
+2. Copy them to the RDI host:
+   - `infra/rdi/runtime/config.yaml -> /opt/rdi/config/config.yaml`
+   - `infra/rdi/runtime/jobs/account_balances.yaml -> /opt/rdi/config/jobs/account_balances.yaml`
 3. Replace placeholder connection values as needed:
    - PostgreSQL host/user/password
    - Redis host/port
@@ -55,3 +72,4 @@ For this RDI setup, use path `2`.
 - PostgreSQL remains the source of truth.
 - The app does not write balance cache entries anymore.
 - If out-of-order CDC delivery is a concern, compare `account_version` in consumers or downstream readers.
+- `infra/rdi/package-pipeline.sh` packages the local runtime layout into `infra/rdi/pipeline.zip` if you prefer to move one artifact.

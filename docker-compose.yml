@@ -2,6 +2,18 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=8
+      - -c
+      - max_wal_senders=8
+      - -c
+      - max_slot_wal_keep_size=4096
+      - -c
+      - wal_sender_timeout=60s
     environment:
       POSTGRES_DB: tap_trading
       POSTGRES_USER: postgres
@@ -10,6 +22,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init/00-replication-setup.sql:/docker-entrypoint-initdb.d/00-replication-setup.sql:ro
 
   redis:
     image: redis/redis-stack-server:latest

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use sqlx::{PgPool, Row};
+use tracing::warn;
 use crate::{
     domain::{
         common::UserId,
@@ -68,6 +69,8 @@ impl LedgerRepository {
         tx.commit()
             .await
             .map_err(|error| LedgerError::Repository(error.to_string()))?;
+
+        self.sync_balance_cache(entry.user_id, &entry.asset).await;
 
         Ok(())
     }
@@ -214,6 +217,22 @@ impl LedgerRepository {
         })
         .transpose()
     }
+
+    async fn sync_balance_cache(&self, user_id: UserId, asset: &str) {
+        match self.fetch_balance_from_db(user_id, asset).await {
+            Ok(Some(balance)) => {
+                if let Err(error) = self.balance_cache.set_balance(&balance).await {
+                    warn!(user_id = %user_id, asset, error = %error, "failed to refresh balance cache after db commit");
+                }
+            }
+            Ok(None) => {
+                warn!(user_id = %user_id, asset, "balance row missing after db commit; cache not updated");
+            }
+            Err(error) => {
+                warn!(user_id = %user_id, asset, error = %error, "failed to fetch balance for cache refresh");
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -238,6 +257,8 @@ impl crate::domain::ledger::LedgerRepository for LedgerRepository {
         .await
         .map_err(|error| LedgerError::Repository(error.to_string()))?;
 
+        self.sync_balance_cache(user_id, asset).await;
+
         Ok(())
     }
 
@@ -255,7 +276,12 @@ impl crate::domain::ledger::LedgerRepository for LedgerRepository {
         }
 
         match self.fetch_balance_from_db(user_id, asset).await? {
-            Some(balance) => Ok(balance),
+            Some(balance) => {
+                if let Err(error) = self.balance_cache.set_balance(&balance).await {
+                    warn!(user_id = %user_id, asset, error = %error, "failed to fill balance cache from db read");
+                }
+                Ok(balance)
+            }
             None => Ok(AccountBalance {
                 user_id,
                 asset: asset.to_owned(),
